@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Tahoma', 'Geneva', 'Verdana', 'sans-serif';
+        }
+        
+        /* Body Styling */
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            padding: 10px;
+        }
+        
+        /* Header */
+        h1 {
+            text-align: center;
+            color: #ff7300;
+            margin-bottom: 20px;
+        }
+        
+        /* File Upload Container */
+        .file-upload-container {
+            background-color: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 15px rgba(255, 115, 0, 0.5);
+            margin-bottom: 15px;
+        }
+        
+        /* File Upload Input */
+        input[type="file"] {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            border: 1px solid #ff7300;
+            padding: 8px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+        
+        /* Chapter Selection */
+        .chapter-select {
+            margin-top: 10px;
+            padding: 8px;
+            background-color: #1a1a1a;
+            border: 1px solid #ff7300;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+        
+        /* Button Styling */
+        button {
+            background-color: #ff7300;
+            color: #121212;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+            width: 100%;
+        }
+        
+        button:hover {
+            background-color: #ff9500;
+        }
+        
+        /* Progress/Loading */
+        .progress-container, .error-message {
+            margin-top: 10px;
+            color: #ff7300;
+        }
+        
+        /* Audio Player */
+        audio {
+            margin-top: 15px;
+            width: 100%;
+        }
+        
+        /* Speed Slider */
+        .speed-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #1a1a1a;
+            outline: none;
+            opacity: 0.9;
+            transition: opacity 0.2s;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .speed-slider:hover {
+            opacity: 1;
+        }
+        
+        .speed-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #ff7300;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        
+        .speed-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: #ff7300;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        
+        /* Card Style for Containers */
+        .card {
+            background-color: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(255, 115, 0, 0.3);
+            margin-top: 15px;
+        }
+        
+        /* PDF and Controls Container */
+        .pdf-container {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+            margin-top: 15px;
+        }
+        
+        .pdf-viewer{
+            width:50%;
+            position: relative;
+        }
+
+        .ai-panel{
+            width:40%;
+            display:flex;
+            flex-direction:column;
+            gap:20px;
+            box-shadow: 0px 0px 10px rgba(255, 115, 0, 0.3);
+        }
+
+        .ai-card{
+            background:#1a1a1a;
+            padding:15px;
+            border-radius:8px;
+        }    
+
+        canvas#pdf-render {
+            max-width: 100%; /* Adjust this value as per your preference */
+            height: auto;   /* Maintain aspect ratio */
+            display: block;
+            margin: 0 auto; /* Center it if you want */
+            background-color: #121212;
+            padding-left:10px;
+        }
+        
+        .controls-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background-color: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(255, 115, 0, 0.3);
+            position: sticky;
+            top: 0;
+            /* height: 93vh;  Full height */
+            overflow-y: auto; /* Scroll if needed */
+        }
+        
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        
+        .button-group button {
+            flex-grow: 1;
+            min-width: 100px;
+        }
+        
+        .page-controls {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .zoom-controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            z-index: 10;
+        }
+
+        .zoom-controls button {
+            background: rgba(0, 0, 0, 0.4);
+            color: #fff;
+            border: 1px solid #ff7300;
+            padding: 6px 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            opacity: 0.4;
+            transition: opacity 0.3s ease;
+        }
+
+        .zoom-controls button:hover {
+            opacity: 1;
+        }
+        .chat-container {
+            height: 740px;
+            overflow-y: auto;
+            background: #121212;
+            border: 1px solid #ff7300;
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .chat-message {
+            padding: 8px 12px;
+            border-radius: 8px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .user-message {
+            background-color: #14a7ed;
+            color: #121212;
+            align-self: flex-end;
+        }
+
+        .ai-message {
+            background-color: #1f1f1f;
+            color: #fff;
+            align-self: flex-start;
+        }
+        #pdfViewer, #aiPanel {
+            display: none;
+        }
+        .pdf-scroll {
+            height: 910px;
+            overflow-y: auto;
+            overflow-x: auto;
+            border: 1px solid #ff7300;
+            border-radius: 6px;
+        }
+        canvas#pdf-render {
+            max-width: none; /* remove scaling restriction */
+        }
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 9999;
+            display: none;
+            pointer-events: all;
+        }
+        /* Scrollbar Track */
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        /* Track */
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;  /* dark track */
+            border-radius: 10px;
+        }
+
+        /* Thumb */
+        ::-webkit-scrollbar-thumb {
+            background: #6b6b6b; /* medium grey */
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a0a0a0;
+        }
+        /* Responsive */
+        @media screen and (max-width: 768px) {
+            .pdf-container {
+                flex-direction: column; /* Stack items vertically */
+                align-items: center;
+            }
+            
+            canvas#pdf-render {
+                max-width: 100% !important; /* Full width on mobile */
+                height: auto !important;
+            }
+            body {
+                padding: 5px;
+            }
+        
+            .pdf-container {
+                flex-direction: column;
+                align-items: center;
+            }
+        
+            .controls-container {
+                width: 100%;
+            }
+        
+            .button-group button {
+                min-width: auto;
+                width: 48%;
+            }
+        
+            .page-controls input[type="number"] {
+                width: 50px;
+            }
+        
+            .speed-slider {
+                height: 6px;
+            }
+        
+            .speed-slider::-webkit-slider-thumb, .speed-slider::-moz-range-thumb {
+                width: 14px;
+                height: 14px;
+            }
+        }
+        
+
+    </style>
+    <title>PDF Book Reader with TTS</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+    <div class="pdf-container">
+        <div class="pdf-viewer" id="pdfViewer">
+            <div class="zoom-controls" style="margin-left: 90%;">
+                <button onclick="zoomIn()">➕</button>
+                <button onclick="zoomOut()">➖</button>
+            </div>
+        <div class="pdf-scroll">
+            <canvas id="pdf-render"></canvas>
+        </div>
+    </div>
+
+    <div class="ai-panel" id="aiPanel">
+
+        <div class="ai-card">
+            <h3>Ask About This Document</h3>
+            <textarea id="questionBox" placeholder="Ask Anything about the page, Ex: Summarize this page etc.." style="width: 100%; height: 60px; border-radius: 4px;margin-top: 6px;resize: none;"></textarea>
+            <button onclick="askQuestion()">Ask AI</button>
+            <div id="chatContainer" class="chat-container"></div>
+        </div>
+
+        
+
+    </div>
+    
+        <div class="controls-container">
+            <input type="file" id="pdfUpload" accept="application/pdf" />
+            
+            <div class="button-group">
+                <button onclick="prevPage()">⬅️ Previous</button>
+                <button onclick="nextPage()">Next ➡️</button>
+                <button onclick="playAudio()">▶️ Play</button>
+                <button onclick="pauseAudio()">⏸️ Pause</button>
+                <button onclick="seekAudio(-10)">⏪ -10s</button>
+                <button onclick="seekAudio(10)">⏩ +10s</button>
+                <button onclick="seekAudio(-60)">⏮️ -1m</button>
+                <button onclick="seekAudio(60)">⏭️ +1m</button>
+            </div>
+    
+            <audio id="audioPlayer" controls></audio>
+    
+            <label for="speedSlider" style="color: white;">Speed:</label>
+            <input type="range" id="speedSlider" min="0.5" max="2" step="0.1" value="1" oninput="changeSpeed(this.value)">
+            <span id="speedValue" style="color: white;">1x</span>
+    
+            <div class="page-controls">
+                Page: <input type="number" id="pageInput" min="1" value="1" style="width: 25%;">
+                / <span id="total-pages"></span>
+                <button onclick="goToPage()">Go</button>
+            </div>
+        </div>
+    </div>
+    <div id="overlay"></div>
+    <script>
+        let chatHistory = [];
+        let pdfDoc = null;
+        let currentPage = 1;
+        let audioPlayer = document.getElementById('audioPlayer');
+        let scale = 1.0;  // base zoom
+        const pdfjsLib = window['pdfjs-dist/build/pdf'];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        audioPlayer.addEventListener("ended", function () {
+        if (currentPage < pdfDoc.numPages) {
+            currentPage++;
+            document.getElementById("pageInput").value = currentPage;
+            renderPage(currentPage);
+            setTimeout(playAudio, 1000); // Wait 1 sec before starting new audio
+            }
+        });
+
+        document.getElementById('pdfUpload').addEventListener('change', function (e) {
+            clearCanvas();
+            const file = e.target.files[0];
+            if (file.type !== "application/pdf") {
+                showAlert("❌ Please upload a valid PDF file");
+                e.target.value = "";
+                return;
+            }
+
+            if (!file.name.toLowerCase().endsWith(".pdf")) {
+                showAlert("❌ Only .pdf files are allowed");
+                e.target.value = "";
+                return;
+            }
+            if (file) {
+                const fileReader = new FileReader();
+                fileReader.onload = function () {
+                    const typedArray = new Uint8Array(this.result);
+                    pdfjsLib.getDocument({ data: typedArray }).promise.then(function (pdf) {
+                        pdfDoc = pdf;
+                        currentPage = 1;
+                        document.getElementById("pdfViewer").style.display = "block";
+                        document.getElementById("aiPanel").style.display = "flex";
+                        document.getElementById('total-pages').innerText = pdfDoc.numPages;
+                        document.getElementById('pageInput').max = pdfDoc.numPages;
+                        document.getElementById('pageInput').value = currentPage;
+                        renderPage(currentPage);
+                        async function extractFullText(pdf) {
+                            let fullText = "";
+
+                            for (let i = 1; i <= pdf.numPages; i++) {
+                                const page = await pdf.getPage(i);
+                                const content = await page.getTextContent();
+                                let pageText = content.items.map(item => item.str).join(" ");
+                                fullText += pageText + "\n";
+                            }
+
+                            return fullText;
+                        }
+                        extractFullText(pdf).then(text => {
+                            fetch("/process_pdf", {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify({ text: text })
+                            });
+                        });
+                    });
+                };
+                fileReader.readAsArrayBuffer(file);
+            }
+        });
+        
+        document.getElementById("questionBox").addEventListener("keydown", function(e) {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                askQuestion();
+            }
+        });
+
+        function renderPage(pageNum) {
+            if (!pdfDoc) {
+                showAlert('Please upload a PDF first.');
+                return;
+            }
+    
+            pdfDoc.getPage(pageNum).then(function (page) {
+                const canvas = document.getElementById('pdf-render');
+                const ctx = canvas.getContext('2d');
+                const viewport = page.getViewport({ scale: scale });
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+    
+                page.render({ canvasContext: ctx, viewport: viewport });
+            });
+        }
+    
+        function prevPage() {
+            if (!pdfDoc) {
+                showAlert('Please upload a PDF first.');
+                return;
+            }
+            if (currentPage <= 1) return;
+            currentPage--;
+            document.getElementById('pageInput').value = currentPage;
+            audioPlayer.pause();
+            renderPage(currentPage);
+        }
+    
+        function nextPage() {
+            if (!pdfDoc) {
+                showAlert('Please upload a PDF first.');
+                return;
+            }
+            if (currentPage >= pdfDoc.numPages) return;
+            currentPage++;
+            document.getElementById('pageInput').value = currentPage;
+            audioPlayer.pause();
+            renderPage(currentPage);
+        }
+    
+        function goToPage() {
+            if (!pdfDoc) {
+                showAlert('Please upload a PDF first.');
+                return;
+            }
+            const pageInput = document.getElementById('pageInput');
+            const pageNumber = parseInt(pageInput.value);
+            if (pageNumber >= 1 && pageNumber <= pdfDoc.numPages) {
+                currentPage = pageNumber;
+                audioPlayer.pause();
+                renderPage(currentPage);
+            } else {
+                showAlert('Invalid page number');
+            }
+        }
+    
+        function playAudio() {
+            if (!pdfDoc) {
+                showAlert('Please upload a PDF first.');
+                return;
+            }
+    
+            showLoading(true); // Show loading indicator
+    
+            pdfDoc.getPage(currentPage).then(function (page) {
+                page.getTextContent().then(function (textContent) {
+                    let text = textContent.items.map(item => item.str).join(' ');
+                    fetch('/tts', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text: text })
+                    })
+
+
+                    .then(response => response.blob())
+                    .then(blob => {
+                        showLoading(false); // Hide loading indicator
+                        const url = URL.createObjectURL(blob);
+                        let currentSpeed = audioPlayer.playbackRate || 1; // Store speed before changing audio
+                        audioPlayer.src = url;
+                        audioPlayer.play();
+                        audioPlayer.playbackRate = currentSpeed; // Restore speed after setting audio source
+                    })
+                    .catch(error => {
+                        showLoading(false);
+                        console.error('Audio Fetch Error:', error);
+                        showAlert('Error generating audio. Please try again.');
+                    });
+                });
+            });
+        }
+    
+        function pauseAudio() {
+            audioPlayer.pause();
+        }
+    
+        function seekAudio(seconds) {
+            audioPlayer.currentTime += seconds;
+        }
+    
+        function changeSpeed(value) {
+            const audioPlayer = document.getElementById("audioPlayer");
+            audioPlayer.playbackRate = value;
+            document.getElementById("speedValue").innerText = value + "x";
+        }
+    
+        function clearCanvas() {
+            const canvas = document.getElementById('pdf-render');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    
+        function showAlert(message) {
+            let alertBox = document.getElementById('alert-box');
+            if (!alertBox) {
+                alertBox = document.createElement('div');
+                alertBox.id = 'alert-box';
+                alertBox.style.position = 'fixed';
+                alertBox.style.top = '20px';
+                alertBox.style.left = '50%';
+                alertBox.style.transform = 'translateX(-50%)';
+                alertBox.style.backgroundColor = 'red';
+                alertBox.style.color = 'white';
+                alertBox.style.padding = '10px 20px';
+                alertBox.style.borderRadius = '5px';
+                alertBox.style.zIndex = '1000';
+                document.body.appendChild(alertBox);
+            }
+            alertBox.innerText = message;
+            alertBox.style.display = 'block';
+            setTimeout(() => {
+                alertBox.style.display = 'none';
+            }, 3000);
+        }
+    
+        function showLoading(show) {
+            let loadingBox = document.getElementById('loading-box');
+            let overlay = document.getElementById('overlay');
+            if (!loadingBox) {
+                loadingBox = document.createElement('div');
+                loadingBox.id = 'loading-box';
+                loadingBox.style.position = 'fixed';
+                loadingBox.style.top = '50%';
+                loadingBox.style.left = '50%';
+                loadingBox.style.transform = 'translate(-50%, -50%)';
+                loadingBox.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+                loadingBox.style.color = 'white';
+                loadingBox.style.padding = '15px';
+                loadingBox.style.borderRadius = '5px';
+                loadingBox.style.zIndex = '10000';
+                loadingBox.innerHTML = `
+                        <div style="text-align:center;">
+                            <img src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExaHZncjNlbm5yaXh0OHl2NDYwY3pyM291NWVxMXEwbzNpZW9panZudiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/WiIuC6fAOoXD2/giphy.gif" 
+                                style="width:80px; margin-bottom:10px;">
+                            <div>Processing audio...</div>
+                        </div>
+                    `;
+                document.body.appendChild(loadingBox);
+            }
+            if (show) {
+                overlay.style.display = 'block';
+                loadingBox.style.display = 'block';
+            } else {
+                overlay.style.display = 'none';
+                loadingBox.style.display = 'none';
+            }
+        }
+        function zoomIn() {
+            scale += 0.1;
+            renderPage(currentPage);
+        }
+
+        function zoomOut() {
+            if (scale > 0.2) {
+                scale -= 0.1;
+                renderPage(currentPage);
+            }
+        }
+
+        async function askQuestion() {
+            if (!pdfDoc) {
+                showAlert("Upload PDF first");
+                return;
+            }
+
+            const question = document.getElementById("questionBox").value;
+            const chatContainer = document.getElementById("chatContainer");
+            if (!question.trim()) {
+                showAlert("Write your question first");
+                return;
+            }
+            const loadingMsg = document.createElement("div");
+            loadingMsg.className = "chat-message ai-message";
+            loadingMsg.innerText = "Thinking...";
+            chatContainer.appendChild(loadingMsg);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            // Extract current page text
+            const page = await pdfDoc.getPage(currentPage);
+            const textContent = await page.getTextContent();
+            let text = textContent.items.map(item => item.str).join(" ");
+
+            // Send to backend
+            chatHistory.push({
+            role: "user",
+            content: question
+            });
+            const askBtn = document.querySelector("button[onclick='askQuestion()']");
+            askBtn.disabled = true;
+            const response = await fetch("/ask", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    question: question,
+                    context: text,
+                    history: chatHistory
+                })
+            });
+            askBtn.disabled = false;
+            const data = await response.json();
+            chatHistory.push({
+                role: "assistant",
+                content: data.answer
+            });
+
+            if (chatHistory.length > 10) {chatHistory = chatHistory.slice(-10);}
+
+            chatContainer.removeChild(loadingMsg);
+
+            // Add user message
+            const userMsg = document.createElement("div");
+            userMsg.className = "chat-message user-message";
+            userMsg.innerText = question;
+            chatContainer.appendChild(userMsg);
+
+            // Add AI message
+            const aiMsg = document.createElement("div");
+            aiMsg.className = "chat-message ai-message";
+
+            const textSpan = document.createElement("span");
+            textSpan.innerText = data.answer;
+
+            const copyBtn = document.createElement("button");
+            copyBtn.innerText = "Copy";
+            copyBtn.style.cursor = "pointer";
+            copyBtn.style.background = "transparent";
+            copyBtn.style.color = "#14a7ed";
+            
+            copyBtn.onclick = () => {
+                navigator.clipboard.writeText(data.answer);
+
+                copyBtn.innerText = "Copied";
+
+                setTimeout(() => {
+                    copyBtn.innerText = "Copy";
+                }, 3000); // 3 sec (you can make 4000 if you want)
+            };
+
+            aiMsg.appendChild(textSpan);
+            aiMsg.appendChild(copyBtn);
+            let sourceText = "";
+
+            if (data.sources && data.sources.length > 0) {
+                sourceText = "\n\n📄 Sources: Page " + data.sources.join(", ");
+            }
+
+            //aiMsg.innerText = data.answer + sourceText;
+            chatContainer.appendChild(aiMsg);
+
+            // Auto scroll to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            // Clear input
+            document.getElementById("questionBox").value = "";
+        }
+    </script>
+    
+</body>
+</html>
