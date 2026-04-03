@@ -6,9 +6,9 @@ from groq import Groq
 from sentence_transformers import SentenceTransformer
 import faiss
 import numpy as np
-from config import GROQ_API_KEY
 import os
 
+GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
 model = SentenceTransformer('all-MiniLM-L6-v2')
 store = {}
 
