@@ -14,7 +14,12 @@ store = {}
 
 
 app = Flask(__name__, template_folder='templates')  # Specify folders
-CORS(app, origins=["*"])
+CORS(app, origins=["https://documind-ai-iota.vercel.app",
+    "https://documind-ai-9t1l.onrender.com"])
+
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({"status": "healthy", "session_id": "ok"}), 200
 
 @app.route('/tts', methods=['POST'])
 def tts():
@@ -50,7 +55,7 @@ def ask():
     if not session_id:
         return jsonify({"error": "Missing session_id"}), 400
     if not session_data:
-        return jsonify({"error": "Session expired"}), 400
+        return jsonify({"error": "Session expired. Please upload PDF again."}), 40
 
     index = session_data["index"]
     if index is None:
@@ -132,8 +137,11 @@ def process_pdf():
     global doc_chunks, doc_embeddings, index
 
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "No JSON data received"}), 400
     text = data.get("text", "")
-
+    if not text:
+        return jsonify({"error": "No text content provided"}), 400
     # 🔹 Step 1: chunking
     chunk_size = 300
     words = text.split()
@@ -142,7 +150,9 @@ def process_pdf():
     session_id = data.get("session_id")
     if not session_id:
         return jsonify({"error": "Missing session_id"}), 400
-
+    if not text.strip():
+        return jsonify({"error": "Text content is empty"}), 400
+        
     pages = text.split("\n")  # each page separated
 
     for page_num, page in enumerate(pages, start=1):
@@ -168,7 +178,7 @@ def process_pdf():
         "index":index,
         "chunks":doc_chunks
     }
-    return jsonify({"status": "PDF processed"})
+    return jsonify({"status": "PDF processed", "chunks": len(doc_chunks)})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
