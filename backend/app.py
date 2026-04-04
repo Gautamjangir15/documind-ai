@@ -134,7 +134,7 @@ def ask():
 @app.route('/process_pdf', methods=['POST'])
 def process_pdf():
     global doc_chunks, doc_embeddings, index
-
+    print("STEP 1: request received")
     data = request.get_json()
     if not data:
         return jsonify({"error": "No JSON data received"}), 400
@@ -164,12 +164,12 @@ def process_pdf():
                 "text": chunk_text,
                 "page": page_num
             })
-
+    print("STEP 2: chunking done")
     # 🔹 Step 2: embeddings
     embeddings = model.encode([chunk["text"] for chunk in doc_chunks])
 
     doc_embeddings = np.array(embeddings).astype("float32")
-
+    print("STEP 3: embeddings done")
     # 🔹 Step 3: FAISS index
     index = faiss.IndexFlatL2(doc_embeddings.shape[1])
     index.add(doc_embeddings)
