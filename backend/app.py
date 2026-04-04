@@ -14,8 +14,7 @@ store = {}
 
 
 app = Flask(__name__, template_folder='templates')  # Specify folders
-CORS(app, origins=["https://documind-ai-iota.vercel.app",
-    "https://documind-ai-9t1l.onrender.com"])
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 @app.route('/health', methods=['GET'])
 def health():
