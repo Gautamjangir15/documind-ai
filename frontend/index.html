@@ -468,7 +468,15 @@
                                 headers: {
                                     "Content-Type": "application/json"
                                 },
-                                body: JSON.stringify({session_id: session_id,text: text})
+                                body: JSON.stringify({session_id: session_id, text: text})
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                console.log("PDF processed:", data);
+                            })
+                            .catch(error => {
+                                console.error("Error processing PDF:", error);
+                                showAlert("Failed to process PDF. Please try again.");
                             });
                         });
                     });
@@ -702,7 +710,12 @@
                     history: chatHistory
                 })
             });
-            askBtn.disabled = false;
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `HTTP ${response.status}`);
+            }
+            
             const data = await response.json();
             chatHistory.push({
                 role: "assistant",
