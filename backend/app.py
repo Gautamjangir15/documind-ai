@@ -42,7 +42,7 @@ def tts():
 
 @app.route('/ask', methods=['POST'])
 def ask():
-    global index, doc_chunks
+    global doc_chunks
     data = request.get_json()
     question = data.get("question")
     #context = data.get("context")
@@ -54,15 +54,13 @@ def ask():
     if not session_data:
         return jsonify({"error": "Session expired. Please upload PDF again."}), 400
 
-    if index is None:
-        return jsonify({"error": "PDF not processed yet"}), 400
     doc_chunks = session_data["chunks"]
     # Limit context (important)
     # Encode question
     
     embeddings = session_data["embeddings"]
     doc_chunks = session_data["chunks"]
-
+    client = Groq(api_key=GROQ_API_KEY)
     # get question embedding
     response = client.embeddings.create(
         model="text-embedding-3-small",
@@ -91,7 +89,7 @@ def ask():
     
     sources = list(set([chunk["page"] for chunk in retrieved_chunks]))
 
-    client = Groq(api_key=GROQ_API_KEY)
+    
     prompt = f"""
         You are an AI assistant helping a user understand a PDF page.
 
@@ -198,10 +196,7 @@ def process_pdf():
         "embeddings": embeddings,
         "chunks": doc_chunks
     }
-    store[session_id] = {
-        "index":index,
-        "chunks":doc_chunks
-    }
+    
     return jsonify({"status": "PDF processed", "chunks": len(doc_chunks)})
 
 if __name__ == "__main__":
