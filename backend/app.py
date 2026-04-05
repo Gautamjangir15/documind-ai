@@ -5,6 +5,7 @@ from io import BytesIO
 from groq import Groq
 import numpy as np
 import os
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
 
@@ -42,73 +43,43 @@ def tts():
 
 @app.route('/ask', methods=['POST'])
 def ask():
-    global doc_chunks
     data = request.get_json()
+
     question = data.get("question")
-    #context = data.get("context")
     history = data.get("history", [])
     session_id = data.get("session_id")
+
     session_data = store.get(session_id)
+
     if not session_id:
         return jsonify({"error": "Missing session_id"}), 400
+
     if not session_data:
         return jsonify({"error": "Session expired. Please upload PDF again."}), 400
 
-    doc_chunks = session_data["chunks"]
-    # Limit context (important)
-    # Encode question
-    
     embeddings = session_data["embeddings"]
     doc_chunks = session_data["chunks"]
-    client = Groq(api_key=GROQ_API_KEY)
-    # get question embedding
-    response = client.embeddings.create(
-        model="text-embedding-3-small",
-        input=question
-    )
+    vectorizer = session_data["vectorizer"]
 
-    query_embedding = np.array(response.data[0].embedding)
+    # ✅ Convert question to vector
+    query_vec = vectorizer.transform([question]).toarray()[0]
 
-    # compute similarity
+    # ✅ Compute similarity
     scores = []
 
     for i, emb in enumerate(embeddings):
-        emb = np.array(emb)
-        score = np.dot(query_embedding, emb) / (
-            np.linalg.norm(query_embedding) * np.linalg.norm(emb)
-        )
+        score = np.dot(query_vec, emb)
         scores.append((score, i))
 
-    # get top 3
+    # Top 3 chunks
     top_chunks = sorted(scores, reverse=True)[:3]
     retrieved_chunks = [doc_chunks[i] for _, i in top_chunks]
-    
 
-    
     context = "\n\n".join([chunk["text"] for chunk in retrieved_chunks])
-    
     sources = list(set([chunk["page"] for chunk in retrieved_chunks]))
 
+    client = Groq(api_key=GROQ_API_KEY)
     
-    prompt = f"""
-        You are an AI assistant helping a user understand a PDF page.
-
-        Use ONLY the provided context.
-
-        Instructions:
-        - If user asks for summary → give concise bullet summary
-        - If user asks for explanation → explain simply
-        - If user asks specific question → answer directly
-        - If answer not in context → say "Not found in this page"
-
-        Keep answers clear and structured.
-
-        Context:
-        {context}
-
-        User Question:
-        {question}
-        """
 
     try:
         messages = [
@@ -120,21 +91,17 @@ def ask():
 
         # Add history
         for msg in history:
-            messages.append({
-                "role": msg["role"],
-                "content": msg["content"]
-            })
+            messages.append(msg)
 
-        # Add latest question with context
         messages.append({
             "role": "user",
             "content": f"""
-    Context:
-    {context}
+Context:
+{context}
 
-    Question:
-    {question}
-    """
+Question:
+{question}
+"""
         })
 
         response = client.chat.completions.create(
@@ -144,59 +111,55 @@ def ask():
 
         answer = response.choices[0].message.content
 
-        return jsonify({"answer": answer,"sources": sources})
+        return jsonify({"answer": answer, "sources": sources})
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 @app.route('/process_pdf', methods=['POST'])
 def process_pdf():
-    
     print("STEP 1: request received")
+
     data = request.get_json()
     if not data:
         return jsonify({"error": "No JSON data received"}), 400
-    text = data.get("text", "")
-    if not text:
-        return jsonify({"error": "No text content provided"}), 400
-    # 🔹 Step 1: chunking
-    chunk_size = 300
-    words = text.split()
 
-    doc_chunks = []
+    text = data.get("text", "")
     session_id = data.get("session_id")
+
     if not session_id:
         return jsonify({"error": "Missing session_id"}), 400
+
     if not text.strip():
         return jsonify({"error": "Text content is empty"}), 400
-        
-    pages = text.split("\n")  # each page separated
+
+    chunk_size = 300
+    doc_chunks = []
+
+    pages = text.split("\n")
 
     for page_num, page in enumerate(pages, start=1):
         words = page.split()
 
         for i in range(0, len(words), chunk_size):
             chunk_text = " ".join(words[i:i+chunk_size])
-
             doc_chunks.append({
                 "text": chunk_text,
                 "page": page_num
             })
-    client = Groq(api_key=GROQ_API_KEY)
 
-    embeddings = []
+    # ✅ TF-IDF embeddings
+    texts = [chunk["text"] for chunk in doc_chunks]
 
-    for chunk in doc_chunks:
-        response = client.embeddings.create(
-            model="text-embedding-3-small",  # or Groq equivalent
-            input=chunk["text"]
-        )
-        embeddings.append(response.data[0].embedding)
+    vectorizer = TfidfVectorizer()
+    embeddings = vectorizer.fit_transform(texts).toarray()
 
     store[session_id] = {
         "embeddings": embeddings,
-        "chunks": doc_chunks
+        "chunks": doc_chunks,
+        "vectorizer": vectorizer
     }
-    
+
     return jsonify({"status": "PDF processed", "chunks": len(doc_chunks)})
 
 if __name__ == "__main__":
