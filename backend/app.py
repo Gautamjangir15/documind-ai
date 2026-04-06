@@ -14,7 +14,19 @@ store = {}
 
 
 app = Flask(__name__, template_folder='templates')  # Specify folders
-CORS(app, resources={r"/*": {"origins": "*"}})
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', 'https://documind-ai-iota.vercel.app')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+    return response
+CORS(
+    app,
+    supports_credentials=True,
+    origins=[
+        "https://documind-ai-iota.vercel.app"
+    ]
+)
 
 @app.route('/health', methods=['GET'])
 def health():
