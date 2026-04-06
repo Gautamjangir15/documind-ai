@@ -405,7 +405,7 @@
     </div>
     <div id="overlay"></div>
     <script>
-        const BASE_URL = "https://documind-ai-9t1l.onrender.com";
+        const BASE_URL = "https://documind-ai-g14m.onrender.com";
         let chatHistory = [];
         let pdfDoc = null;
         let currentPage = 1;
@@ -463,6 +463,8 @@
                             return fullText;
                         }
                         extractFullText(pdf).then(text => {
+                            console.log("Sending text to backend...", text.substring(0, 100));
+                            
                             fetch(`${BASE_URL}/process_pdf`, {
                                 method: "POST",
                                 headers: {
@@ -470,13 +472,19 @@
                                 },
                                 body: JSON.stringify({session_id: session_id, text: text})
                             })
-                            .then(response => response.json())
+                            .then(response => {
+                                console.log("Response status:", response.status);
+                                if (!response.ok) {
+                                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                                }
+                                return response.json();
+                            })
                             .then(data => {
                                 console.log("PDF processed:", data);
                             })
                             .catch(error => {
                                 console.error("Error processing PDF:", error);
-                                showAlert("Failed to process PDF. Please try again.");
+                                showAlert("Failed to process PDF: " + error.message);
                             });
                         });
                     });
