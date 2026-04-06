@@ -28,6 +28,10 @@ CORS(
     ]
 )
 
+@app.route('/', methods=['GET'])
+def checking():
+    print("documind api is running")
+    
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({"status": "healthy", "session_id": "ok"}), 200
