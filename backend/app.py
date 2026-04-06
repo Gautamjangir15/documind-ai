@@ -14,28 +14,30 @@ store = {}
 
 
 app = Flask(__name__, template_folder='templates')  # Specify folders
+CORS(app, resources={
+    r"/*": {
+        "origins": [
+            "https://documind-ai-iota.vercel.app",
+            "http://localhost:3000",  # for local testing
+            "http://localhost:5000"
+        ],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
+
+# Also add OPTIONS handler for preflight
 @app.after_request
 def after_request(response):
     response.headers.add('Access-Control-Allow-Origin', 'https://documind-ai-iota.vercel.app')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+    response.headers.add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
     return response
-CORS(
-    app,
-    supports_credentials=True,
-    origins=[
-        "https://documind-ai-iota.vercel.app"
-    ]
-)
 
-@app.route('/', methods=['GET'])
-def checking():
-    print("documind api is running")
-    
-@app.route('/health', methods=['GET'])
+@app.route("/")
 def health():
-    return jsonify({"status": "healthy", "session_id": "ok"}), 200
-
+    return "Documind AI API is running"
+    
 @app.route('/tts', methods=['POST'])
 def tts():
     try:
