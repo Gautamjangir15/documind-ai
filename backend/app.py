@@ -6,6 +6,7 @@ from groq import Groq
 import numpy as np
 import os
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
 
@@ -62,19 +63,12 @@ def ask():
     vectorizer = session_data["vectorizer"]
 
     # ✅ Convert question to vector
-    query_vec = vectorizer.transform([question]).toarray()[0]
+    query_vec = vectorizer.transform([question])
 
     # ✅ Compute similarity
-    scores = []
-
-    for i, emb in enumerate(embeddings):
-        score = np.dot(query_vec, emb)
-        scores.append((score, i))
-
-    # Top 3 chunks
-    top_chunks = sorted(scores, reverse=True)[:3]
-    retrieved_chunks = [doc_chunks[i] for _, i in top_chunks]
-
+    scores = cosine_similarity(query_vec, embeddings)[0]
+    top_indices = scores.argsort()[-3:][::-1]
+    retrieved_chunks = [doc_chunks[i] for i in top_indices]
     context = "\n\n".join([chunk["text"] for chunk in retrieved_chunks])
     sources = list(set([chunk["page"] for chunk in retrieved_chunks]))
 
@@ -152,7 +146,7 @@ def process_pdf():
     texts = [chunk["text"] for chunk in doc_chunks]
 
     vectorizer = TfidfVectorizer()
-    embeddings = vectorizer.fit_transform(texts).toarray()
+    embeddings = vectorizer.fit_transform(texts)
 
     store[session_id] = {
         "embeddings": embeddings,
