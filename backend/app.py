@@ -13,7 +13,7 @@ GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
 store = {}
 
 
-app = Flask(__name__, template_folder='templates')  # Specify folders
+app = Flask(__name__)  # Specify folders
 CORS(app, resources={
     r"/*": {
         "origins": [
